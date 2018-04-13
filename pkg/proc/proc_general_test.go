@@ -1,3 +1,7 @@
+// +build amd64
+
+// Can't do this on 32-bit systems
+
 package proc
 
 import (

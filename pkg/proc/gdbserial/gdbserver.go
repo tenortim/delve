@@ -1491,7 +1491,7 @@ func (regs *gdbRegisters) setCX(value uint64) {
 	binary.LittleEndian.PutUint64(regs.regs[regnameCX].value, value)
 }
 
-func (regs *gdbRegisters) TLS() uint64 {
+func (regs *gdbRegisters) TLS(t proc.Thread) uint64 {
 	return regs.tls
 }
 

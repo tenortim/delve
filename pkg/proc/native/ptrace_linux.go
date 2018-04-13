@@ -80,3 +80,16 @@ func PtraceGetRegset(tid int) (regset proc.LinuxX86Xstate, err error) {
 	err = proc.LinuxX86XstateRead(xstateargs[:iov.Len], false, &regset)
 	return regset, err
 }
+
+func PtraceGetThreadBase(tid int) (uintptr, error) {
+	var desc [4]uint32
+
+	const PTRACE_GET_THREAD_AREA = 25
+	// *   6 - TLS segment #1			[ glibc's TLS segment ]`
+	addr := 6
+	_, _, err := sys.Syscall6(sys.SYS_PTRACE, PTRACE_GET_THREAD_AREA, uintptr(tid), uintptr(addr), uintptr(unsafe.Pointer(&desc[0])), 0, 0)
+	if err != syscall.Errno(0) {
+		return 0, err
+	}
+	return uintptr(desc[1]), nil
+}

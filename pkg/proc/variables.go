@@ -11,6 +11,7 @@ import (
 	"go/token"
 	"math"
 	"reflect"
+	"runtime"
 	"sort"
 	"strings"
 	"unsafe"
@@ -387,7 +388,12 @@ func (gvar *Variable) parseG() (*G, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error derefing *G %s", err)
 		}
-		gaddr = binary.LittleEndian.Uint64(gaddrbytes)
+		switch runtime.GOARCH {
+		case "386":
+			gaddr = uint64(binary.LittleEndian.Uint32(gaddrbytes))
+		case "amd64":
+			gaddr = binary.LittleEndian.Uint64(gaddrbytes)
+		}
 	}
 	if gaddr == 0 {
 		id := 0
@@ -975,7 +981,13 @@ func readStringInfo(mem MemoryReadWriter, arch Arch, addr uintptr) (uintptr, int
 	if err != nil {
 		return 0, 0, fmt.Errorf("could not read string len %s", err)
 	}
-	strlen := int64(binary.LittleEndian.Uint64(val))
+	var strlen int64
+	switch runtime.GOARCH {
+	case "386":
+		strlen = int64(binary.LittleEndian.Uint32(val))
+	case "amd64":
+		strlen = int64(binary.LittleEndian.Uint64(val))
+	}
 	if strlen < 0 {
 		return 0, 0, fmt.Errorf("invalid length: %d", strlen)
 	}
@@ -985,7 +997,12 @@ func readStringInfo(mem MemoryReadWriter, arch Arch, addr uintptr) (uintptr, int
 	if err != nil {
 		return 0, 0, fmt.Errorf("could not read string pointer %s", err)
 	}
-	addr = uintptr(binary.LittleEndian.Uint64(val))
+	switch runtime.GOARCH {
+	case "386":
+		addr = uintptr(binary.LittleEndian.Uint32(val))
+	case "amd64":
+		addr = uintptr(binary.LittleEndian.Uint64(val))
+	}
 	if addr == 0 {
 		return 0, 0, nil
 	}

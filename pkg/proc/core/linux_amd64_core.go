@@ -72,7 +72,7 @@ func (r *LinuxCoreRegisters) CX() uint64 {
 	return r.Rcx
 }
 
-func (r *LinuxCoreRegisters) TLS() uint64 {
+func (r *LinuxCoreRegisters) TLS(t proc.Thread) uint64 {
 	return r.Fs_base
 }
 

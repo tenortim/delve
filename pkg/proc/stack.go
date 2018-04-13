@@ -4,6 +4,7 @@ import (
 	"debug/dwarf"
 	"errors"
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/derekparker/delve/pkg/dwarf/frame"
@@ -482,7 +483,12 @@ func (it *stackIterator) advanceRegs() (callFrameRegs op.DwarfRegisters, ret uin
 	// implicit.
 	// See also the comment in dwarf2_frame_default_init in
 	// $GDB_SOURCE/dwarf2-frame.c
-	callFrameRegs.AddReg(uint64(amd64DwarfSPRegNum), cfareg)
+	switch runtime.GOARCH {
+	case "386":
+		callFrameRegs.AddReg(uint64(i386DwarfSPRegNum), cfareg)
+	case "amd64":
+		callFrameRegs.AddReg(uint64(amd64DwarfSPRegNum), cfareg)
+	}
 
 	for i, regRule := range framectx.Regs {
 		reg, err := it.executeFrameRegRule(i, regRule, it.regs.CFA)

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -63,7 +64,7 @@ type BinaryInfo struct {
 	dwarfReader *dwarf.Reader
 }
 
-var UnsupportedLinuxArchErr = errors.New("unsupported architecture - only linux/amd64 is supported")
+var UnsupportedLinuxArchErr = errors.New("unsupported architecture - only linux/amd64 and linux/386 are supported")
 var UnsupportedWindowsArchErr = errors.New("unsupported architecture of windows/386 - only windows/amd64 is supported")
 var UnsupportedDarwinArchErr = errors.New("unsupported architecture - only darwin/amd64 is supported")
 
@@ -222,6 +223,8 @@ func NewBinaryInfo(goos, goarch string) BinaryInfo {
 
 	// TODO: find better way to determine proc arch (perhaps use executable file info)
 	switch goarch {
+	case "386":
+		r.Arch = I386Arch(goos)
 	case "amd64":
 		r.Arch = AMD64Arch(goos)
 	}
@@ -439,7 +442,7 @@ func (bi *BinaryInfo) LoadBinaryInfoElf(path string, wg *sync.WaitGroup) error {
 	if err != nil {
 		return err
 	}
-	if elfFile.Machine != elf.EM_X86_64 {
+	if elfFile.Machine != elf.EM_X86_64 && elfFile.Machine != elf.EM_386 {
 		return UnsupportedLinuxArchErr
 	}
 	bi.dwarf, err = elfFile.DWARF()
@@ -528,7 +531,12 @@ func (bi *BinaryInfo) setGStructOffsetElf(exe *elf.File, wg *sync.WaitGroup) {
 		}
 	}
 	if tlsg == nil {
-		bi.gStructOffset = ^uint64(8) + 1 // -8
+		switch runtime.GOARCH {
+		case "386":
+			bi.gStructOffset = ^uint64(4) + 1 // -4
+		case "amd64":
+			bi.gStructOffset = ^uint64(8) + 1 // -8
+		}
 		return
 	}
 	var tls *elf.Prog

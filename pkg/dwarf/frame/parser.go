@@ -6,6 +6,7 @@ package frame
 import (
 	"bytes"
 	"encoding/binary"
+	"runtime"
 
 	"github.com/derekparker/delve/pkg/dwarf/util"
 )
@@ -68,8 +69,14 @@ func parselength(ctx *parseContext) parsefunc {
 func parseFDE(ctx *parseContext) parsefunc {
 	r := ctx.buf.Next(int(ctx.length))
 
-	ctx.frame.begin = binary.LittleEndian.Uint64(r[:8])
-	ctx.frame.end = binary.LittleEndian.Uint64(r[8:16])
+	switch runtime.GOARCH {
+	case "amd64":
+		ctx.frame.begin = binary.LittleEndian.Uint64(r[:8])
+		ctx.frame.end = binary.LittleEndian.Uint64(r[8:16])
+	case "386":
+		ctx.frame.begin = uint64(binary.LittleEndian.Uint32(r[:4]))
+		ctx.frame.end = uint64(binary.LittleEndian.Uint32(r[4:8]))
+	}
 
 	// Insert into the tree after setting address range begin
 	// otherwise compares won't work.
@@ -78,7 +85,12 @@ func parseFDE(ctx *parseContext) parsefunc {
 	// The rest of this entry consists of the instructions
 	// so we can just grab all of the data from the buffer
 	// cursor to length.
-	ctx.frame.Instructions = r[16:]
+	switch runtime.GOARCH {
+	case "amd64":
+		ctx.frame.Instructions = r[16:]
+	case "386":
+		ctx.frame.Instructions = r[8:]
+	}
 	ctx.length = 0
 
 	return parselength

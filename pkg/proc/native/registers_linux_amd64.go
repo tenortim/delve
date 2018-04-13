@@ -81,7 +81,7 @@ func (r *Regs) CX() uint64 {
 
 // TLS returns the address of the thread
 // local storage memory segment.
-func (r *Regs) TLS() uint64 {
+func (r *Regs) TLS(t proc.Thread) uint64 {
 	return r.regs.Fs_base
 }
 

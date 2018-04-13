@@ -7,6 +7,7 @@ import (
 	"go/ast"
 	"go/token"
 	"path/filepath"
+	"runtime"
 	"strconv"
 )
 
@@ -422,7 +423,13 @@ func GoroutinesInfo(dbp Process) ([]*G, error) {
 	if err != nil {
 		return nil, err
 	}
-	allgptr := binary.LittleEndian.Uint64(faddr)
+	var allgptr uint64
+	switch runtime.GOARCH {
+	case "386":
+		allgptr = uint64(binary.LittleEndian.Uint32(faddr))
+	case "amd64":
+		allgptr = binary.LittleEndian.Uint64(faddr)
+	}
 
 	for i := uint64(0); i < allglen; i++ {
 		gvar, err := newGVariable(dbp.CurrentThread(), uintptr(allgptr+(i*uint64(dbp.BinInfo().Arch.PtrSize()))), true)

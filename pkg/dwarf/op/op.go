@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"runtime"
 
 	"github.com/derekparker/delve/pkg/dwarf/util"
 )
@@ -133,7 +134,12 @@ func callframecfa(opcode Opcode, ctxt *context) error {
 }
 
 func addr(opcode Opcode, ctxt *context) error {
-	ctxt.stack = append(ctxt.stack, int64(binary.LittleEndian.Uint64(ctxt.buf.Next(8))))
+	switch runtime.GOARCH {
+	case "386":
+		ctxt.stack = append(ctxt.stack, int64(binary.LittleEndian.Uint32(ctxt.buf.Next(4))))
+	case "amd64":
+		ctxt.stack = append(ctxt.stack, int64(binary.LittleEndian.Uint64(ctxt.buf.Next(8))))
+	}
 	return nil
 }
 

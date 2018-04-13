@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"runtime"
 
 	"github.com/derekparker/delve/pkg/dwarf/util"
 )
@@ -391,7 +392,14 @@ func endsequence(sm *StateMachine, buf *bytes.Buffer) {
 func setaddress(sm *StateMachine, buf *bytes.Buffer) {
 	var addr uint64
 
-	binary.Read(buf, binary.LittleEndian, &addr)
+	switch runtime.GOARCH {
+	case "386":
+		var addr32 uint32
+		binary.Read(buf, binary.LittleEndian, &addr32)
+		addr = uint64(addr32)
+	case "amd64":
+		binary.Read(buf, binary.LittleEndian, &addr)
+	}
 
 	sm.address = addr
 }

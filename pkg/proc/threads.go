@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 
 	"github.com/derekparker/delve/pkg/dwarf/godwarf"
@@ -383,11 +384,16 @@ func getGVariable(thread Thread) (*Variable, error) {
 	gaddr, hasgaddr := regs.GAddr()
 	if !hasgaddr {
 		gaddrbs := make([]byte, thread.Arch().PtrSize())
-		_, err := thread.ReadMemory(gaddrbs, uintptr(regs.TLS()+thread.BinInfo().GStructOffset()))
+		_, err := thread.ReadMemory(gaddrbs, uintptr(regs.TLS(thread)+thread.BinInfo().GStructOffset()))
 		if err != nil {
 			return nil, err
 		}
-		gaddr = binary.LittleEndian.Uint64(gaddrbs)
+		switch runtime.GOARCH {
+		case "386":
+			gaddr = uint64(binary.LittleEndian.Uint32(gaddrbs))
+		case "amd64":
+			gaddr = binary.LittleEndian.Uint64(gaddrbs)
+		}
 	}
 
 	return newGVariable(thread, uintptr(gaddr), thread.Arch().DerefTLS())

@@ -11,6 +11,7 @@ import (
 	"go/token"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -237,7 +238,12 @@ func (bi *BinaryInfo) loadDebugInfoMaps(debugLineBytes []byte, wg *sync.WaitGrou
 				var addr uint64
 				if loc, ok := entry.Val(dwarf.AttrLocation).([]byte); ok {
 					if len(loc) == bi.Arch.PtrSize()+1 && op.Opcode(loc[0]) == op.DW_OP_addr {
-						addr = binary.LittleEndian.Uint64(loc[1:])
+						switch runtime.GOARCH {
+						case "386":
+							addr = uint64(binary.LittleEndian.Uint32(loc[1:]))
+						case "amd64":
+							addr = binary.LittleEndian.Uint64(loc[1:])
+						}
 					}
 				}
 				bi.packageVars = append(bi.packageVars, packageVar{n, entry.Offset, addr})
